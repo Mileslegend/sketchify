@@ -103,7 +103,7 @@ export default function Home() {
             </div>
 
             <div className="projects-grid">
-              {projects?.map(({ id, name, renderedImage, sourceImage, timeStamp }) => (
+              {projects?.map(({ id, name, renderedImage, sourceImage, timestamp }) => (
                   <div key={id} className="project-card group">
                     <div className="preview">
                       <img
@@ -121,8 +121,8 @@ export default function Home() {
                         <div className="meta">
                           <ClockIcon size={12} />
                           <span>
-                  {timeStamp
-                      ? new Date(timeStamp).toLocaleDateString()
+                  {timestamp
+                      ? new Date(timestamp).toLocaleDateString()
                       : '—'}
                 </span>
                           <span>By Miles Legend</span>
