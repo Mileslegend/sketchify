@@ -8,9 +8,14 @@ const Upload = ({ onComplete, className }: UploadProps) => {
     const [file, setFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [error, setError] = useState<string | null>(null);
     const intervalRef = useRef<number | null>(null);
 
     const { isSignedIn } = useOutletContext<AuthContext>();
+
+    // Validation config
+    const allowedTypes = ["image/jpeg", "image/png"];
+    const MAX_UPLOAD_SIZE = 50 * 1024 * 1024; // 50 MB
 
     // Clear running interval on unmount
     useEffect(() => {
@@ -46,7 +51,29 @@ const Upload = ({ onComplete, className }: UploadProps) => {
     }, []);
 
     const processFile = useCallback((picked: File) => {
-        if (!isSignedIn) return; // Block when not signed in
+        // 1) Block when not signed in
+        if (!isSignedIn) return;
+
+        // 2) Clear previous error
+        setError(null);
+
+        // 3) Validate type and size BEFORE any reading happens
+        const isTypeAllowed = allowedTypes.includes(picked.type);
+        const isSizeAllowed = picked.size <= MAX_UPLOAD_SIZE;
+        if (!isTypeAllowed || !isSizeAllowed) {
+            // Reset UI and surface an error; do NOT read the file
+            setFile(null);
+            setProgress(0);
+            setIsDragging(false);
+            const readableSizeMb = (MAX_UPLOAD_SIZE / (1024 * 1024)).toFixed(0);
+            const errMsg = !isTypeAllowed
+                ? `Unsupported file type: ${picked.type || "unknown"}. Allowed: JPG, PNG.`
+                : `File is too large. Max size is ${readableSizeMb} MB.`;
+            setError(errMsg);
+            return;
+        }
+
+        // 4) Passed validation — proceed
         setFile(picked);
         setIsDragging(false);
 
@@ -65,9 +92,10 @@ const Upload = ({ onComplete, className }: UploadProps) => {
             setFile(null);
             setProgress(0);
             setIsDragging(false);
+            setError("Failed to read the file. Please try again.");
         };
         reader.readAsDataURL(picked);
-    }, [isSignedIn, onComplete, startProgress]);
+    }, [isSignedIn, onComplete, startProgress, allowedTypes]);
 
     const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         if (!isSignedIn) return;
@@ -132,6 +160,11 @@ const Upload = ({ onComplete, className }: UploadProps) => {
                         <p className={'help'}>
                             Maximum file size is 50 MB
                         </p>
+                        {error && (
+                            <p className={'error'} role="alert">
+                                {error}
+                            </p>
+                        )}
                     </div>
                 </div>
             ) : (
