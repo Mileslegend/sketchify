@@ -4,6 +4,8 @@ import {ArrowRightIcon, ArrowUpRightIcon, ClockIcon, Layers} from "lucide-react"
 import Button from "../../components/ui/Button";
 import Upload from "../../components/Upload";
 import {useNavigate} from "react-router";
+import {useState} from "react";
+import {createProject} from "../../lib/puter.action";
 
 
 export function meta({}: Route.MetaArgs) {
@@ -16,11 +18,40 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Home() {
 
+  const [projects, setProjects] = useState<DesignItem[]>([])
+  
   const navigate = useNavigate();
   const handleUploadComplete = async (base64Image: string) => {
     const newId = Date.now().toString();
+    const name = `Residence ${newId}`;
 
-    navigate(`/visualizer/${newId}`);
+    const newItem = {
+      id: newId,
+      name,
+      sourceImage: base64Image,
+      renderedImage: undefined,
+      timestamp: Date.now(),
+    }
+
+    const saved = await createProject({
+      item: newItem,
+      visibility: 'private'
+    })
+
+    if(!saved) {
+      console.error("Failed to create project");
+      return false;
+    }
+
+    setProjects((prev) => [saved, ...prev]);
+
+    navigate(`/visualizer/${newId}`, {
+      state: {
+        initialImage: saved.sourceImage,
+        initialRendered: saved.renderedImage || null,
+        name
+      }
+    });
 
     return true;
   }
@@ -62,7 +93,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className={'projects'}>
+        <section className="projects">
           <div className="section-inner">
             <div className="section-head">
               <div className="copy">
@@ -70,36 +101,44 @@ export default function Home() {
                 <p>Your latest work and community shared projects all in one place</p>
               </div>
             </div>
+
             <div className="projects-grid">
-              <div className="project-card group">
-                <div className="preview">
-                  <img
-                  src={'https://roomify-mlhuk267-dfwu1i.puter.site/projects/1770803585402/rendered.png'}
-                  alt={'project'}
-                  />
-                  <div className="badge">
-                    <span>Community</span>
-                  </div>
-                </div>
-                <div className="card-body">
-                  <div>
-                    <h3>
-                      Project Nevada
-                    </h3>
-                    <div className="meta">
-                      <ClockIcon size={12} />
-                      <span>{new Date('01.01.2027').toLocaleDateString()}</span>
-                      <span>By Miles Legend</span>
+              {projects?.map(({ id, name, renderedImage, sourceImage, timeStamp }) => (
+                  <div key={id} className="project-card group">
+                    <div className="preview">
+                      <img
+                          src={renderedImage || sourceImage || '/placeholder.png'}
+                          alt={`${name} project preview`}
+                      />
+                      <div className="badge">
+                        <span>Community</span>
+                      </div>
+                    </div>
+
+                    <div className="card-body">
+                      <div>
+                        <h3>{name}</h3>
+                        <div className="meta">
+                          <ClockIcon size={12} />
+                          <span>
+                  {timeStamp
+                      ? new Date(timeStamp).toLocaleDateString()
+                      : '—'}
+                </span>
+                          <span>By Miles Legend</span>
+                        </div>
+                      </div>
+
+                      <div className="arrow">
+                        <ArrowUpRightIcon size={18} />
+                      </div>
                     </div>
                   </div>
-                  <div className={'arrow'}>
-                    <ArrowUpRightIcon size={18}  />
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
-  </div>
+
+      </div>
   )
 }
