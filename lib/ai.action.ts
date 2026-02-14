@@ -1,4 +1,17 @@
 
+// Local minimal type declarations to satisfy TypeScript in this module.
+// If ambient globals from type.d.ts are available, these local types will simply shadow them here.
+export type RenderCompletePayload = {
+  renderedImage: string;
+  renderedPath?: string;
+};
+
+export interface Generate3DViewParams {
+  // Accept the same shape used by callers (data URL string or URL string)
+  sourceImage: string;
+  projectId?: string | null;
+}
+
 export async function fetchAsDataUrl(url: string): Promise<string> {
   const response = await fetch(url);
   if (!response.ok) {

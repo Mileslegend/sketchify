@@ -15,6 +15,7 @@ const Visualizer = () => {
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [currentImage, setCurrentImage] = useState<string | null>(initialRender || null);
+    const [error, setError] = useState<string | null>(null);
 
     const handleBack = () => navigate('/');
 
@@ -22,14 +23,16 @@ const Visualizer = () => {
         if(!initialImage) return;
 
         try {
+            setError(null); // clear any previous error when starting
             setIsProcessing(true);
             const result = await generate3DView({ sourceImage: initialImage });
             if(result.renderedImage) {
                 setCurrentImage(result.renderedImage);
-
-                //update the project in the database with the rendered image
+                // update the project in the database with the rendered image (future)
             }
-        } catch (error) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            setError(message);
             console.error('Generation failed: ', error);
         } finally {
             setIsProcessing(false);
@@ -111,6 +114,20 @@ const Visualizer = () => {
                                         <RefreshCcw className={'spinner'} />
                                         <span className={'title'}>Rendering...</span>
                                         <span className={'subtitle'}>Generating your 3D visualization</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            { error && !isProcessing && (
+                                <div className={'render-overlay'}>
+                                    <div className={'rendering-card error'} role="alert">
+                                        <span className={'title'}>Generation failed</span>
+                                        <span className={'subtitle'}>{error}</span>
+                                        <div className={'actions'}>
+                                            <Button size={'sm'} onClick={runGeneration} disabled={isProcessing}>
+                                                Retry
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
